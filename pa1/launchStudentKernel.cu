@@ -52,6 +52,8 @@ void launchStudentKernel(int M, int N, int K, int layoutA,
 
   // Launch your kernel here with appropriate grid and block sizes...
 
+    assert(M > 0 && N > 0 && K > 0);
+
     // A good starter block size
     const int TILE_X = 16;
     const int TILE_Y = 16;

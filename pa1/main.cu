@@ -126,10 +126,12 @@ int main(int argc, char* argv[]) {
   cudaMalloc(&d_B, sizeB);
   cudaMalloc(&d_C, sizeC);
 
-  cudamemcpy(d_A,h_A.data(), sizeA, cudaMemcpyHostToDevice);
-  cudamemcpy(d_B,h_B.data(), sizeB, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_A,h_A.data(), sizeA, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_B,h_B.data(), sizeB, cudaMemcpyHostToDevice);
 
-  launchStudentKernel(d_A, d_B, d_C, M, N, K, layout_A, layout_B);
+  launchStudentKernel(M, N, K,
+                    layout_A, layout_B,
+                    d_A, d_B, d_C);
   cudaDeviceSynchronize();
 
   std::vector<float> h_C(M * N);
