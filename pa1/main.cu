@@ -82,7 +82,7 @@ static bool read_matrix_txt(const std::string& path,
 // You'll need this when writing your report.
 int main(int argc, char* argv[]) {
 
-  fs::path folder = "sample_2";
+  fs::path folder = "sample_3";
 
   fs::path A_path, B_path, C_path;
 
