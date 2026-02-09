@@ -1,6 +1,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cstdio>
+#include <cassert>
 
 // TODO: Implement this function...
 // This is for grading. You will use this function with the testbench we provide.
