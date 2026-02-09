@@ -8,6 +8,10 @@
 #include <vector>
 #include <fstream>
 #include <string>
+#include <filesystem>
+#include <cmath>
+#include <stdexcept>
+namespace fs = std::filesystem;
 
 void launchStudentKernel(int M, int N, int K,int layoutA, int layoutB,float* A, float* B, float* C);
 
@@ -19,12 +23,18 @@ static bool read_matrix_txt(const std::string& path,
     std::ifstream in(path);
     if (!in) return false;
 
-    if (!(in >> layout)) return false;
+
+    std::string layout_tok;
+    if (!(in >> layout_tok)) return false;
     if (!(in >> rows))   return false;
     if (!(in >> cols))   return false;
 
-    out.resize(rows * cols);
-    for (int i = 0; i < rows * cols; i++) {
+    if (layout_tok == "T" || layout_tok == "t" || layout_tok == "0") layout = 0;      // row-major
+    else if (layout_tok == "N" || layout_tok == "n" || layout_tok == "1") layout = 1; // col-major
+    else return false;
+
+    out.resize((size_t)rows * (size_t)cols);
+    for (size_t int i = 0; i < rows * cols; i++) {
         if (!(in >> out[i])) return false;
     }
     return true;
@@ -49,7 +59,7 @@ static bool read_matrix_txt(const std::string& path,
           if(bad < 10) {
           int r = i / N, c = i % N;
           std::cout << "Mismatch at ("<< r << ","<< c << "): got = " << a
-                    << "ref = " << b << " diff =" << diff << "tol = " << "\n";
+                    << "ref = " << b << " diff =" << diff << "tol = " << tol << "\n";
         }
         bad++;
       }
@@ -72,10 +82,20 @@ static bool read_matrix_txt(const std::string& path,
 // You'll need this when writing your report.
 int main(int argc, char* argv[]) {
 
-  std::string folder_path = "sample_1";
-  std::string A_path = folder_path + "/A_64x64_T.txt";
-  std::string B_path = folder_path + "/B_64x64_T.txt";
-  std::string C_path = folder_path + "/C_64x64_T.txt";
+  fs::path folder = "sample_1";
+
+  fs::path A_path, B_path, C_path;
+
+  for (const auto& entry : fs::directory_iterator(folder)) {
+      std::string name = entry.path().filename().string();
+      if (name.rfind("A_64x64_", 0) == 0) A_path = entry.path();
+      if (name.rfind("B_64x64_", 0) == 0) B_path = entry.path();
+      if (name.rfind("C_64x64_", 0) == 0) C_path = entry.path();
+  }
+
+  if (A_path.empty() || B_path.empty() || C_path.empty()) {
+    throw std::runtime_error("Missing matrix file(s)");
+  }
 
   std::vector<float> h_A,h_B,h_C_ref;
 
