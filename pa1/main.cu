@@ -72,9 +72,10 @@ static bool read_matrix_txt(const std::string& path,
 // You'll need this when writing your report.
 int main(int argc, char* argv[]) {
 
-  std::string A_path = "sample_0/A_64x64_T.txt";
-  std::string B_path = "sample_0/B_64x64_T.txt";
-  std::string C_path = "sample_0/C_64x64_T.txt";
+  std::string folder_path = "sample_1"
+  std::string A_path = folder_path + "/A_64x64_T.txt";
+  std::string B_path = folder_path + "/B_64x64_T.txt";
+  std::string C_path = folder_path + "/C_64x64_T.txt";
 
   std::vector<float> h_A,h_B,h_C_ref;
 
