@@ -2,6 +2,7 @@
 #include <iostream>
 #include <chrono>
 #include <cstdlib>
+#include <cuda_runtime.h>
 #include <ctime>
 #include <iomanip>
 #include <vector>
