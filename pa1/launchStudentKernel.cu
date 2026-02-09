@@ -49,7 +49,56 @@ void launchStudentKernel(int M, int N, int K, int layoutA,
                                               float* B,
                                               float* C) {
 
-                                                
+  static bool read_matrix_txt(const std::string& path, std::vector<float>& out, int rows, int cols) {
+    std::ifstream in(path);
+    if(!in)return false;
+
+    out.clear();
+    out.reserve(rows*cols);
+
+    float x;
+    while(in >> x) out.push_back(x);
+
+    return (int)out.size() == rows * cols;
+  }
+  
+  static void compare_C(const std::vector<float>& got,
+                        const std::vector<float>& ref,
+                        int M, int N,
+                        float atol = 1e-3f, float rtol = 1e-3f)
+  {
+    int bad = 0;
+    float max_abs = 0.0f;
+    int max_i = -1;
+
+    for (int i = 0; i < M * N; i++) {
+      float a = got[i];
+      float b = ref[i];
+      float diff = std::fabs(a-b);
+      float tol = atol + rtol * std::fabs(b);
+
+      if(diff > tol) {
+          if(bad < 10) {
+          int r = i / N, c = i % N;
+          std::cout << "Mismatch at ("<< r << ","<< c << "): got = " << a
+                    << "ref = " << b << " diff =" << diff << "tol = " << "\n";
+        }
+        bad++;
+      }
+      if (diff > max_abs) {
+        max_abs = diff;
+        max_i = i;
+      }
+    }
+    if (bad == 0) {
+      std::cout << "[SUCCESS] Output matches reference (within tolerance)\n";
+    } else {
+        int r = max_i / N, c = max_i % N;
+        std::cout << "[FAIL] mismatches = " << bad
+                  << " max_abs_diff = " << max_abs
+                  << " at (" << r << "," << c << ")\n";
+    }
+  }
 
   // Launch your kernel here with appropriate grid and block sizes...
 
