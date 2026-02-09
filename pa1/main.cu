@@ -34,7 +34,7 @@ static bool read_matrix_txt(const std::string& path,
     else return false;
 
     out.resize((size_t)rows * (size_t)cols);
-    for (size_t int i = 0; i < rows * cols; i++) {
+    for (size_t i = 0; i < rows * cols; i++) {
         if (!(in >> out[i])) return false;
     }
     return true;
