@@ -9,6 +9,8 @@
 #include <fstream>
 #include <string>
 
+void launchStudentKernel(int M, int N, int K,int layoutA, int layoutB,float* A, float* B, float* C);
+
 
 static bool read_matrix_txt(const std::string& path,
                             std::vector<float>& out,
@@ -129,9 +131,7 @@ int main(int argc, char* argv[]) {
   cudaMemcpy(d_A,h_A.data(), sizeA, cudaMemcpyHostToDevice);
   cudaMemcpy(d_B,h_B.data(), sizeB, cudaMemcpyHostToDevice);
 
-  launchStudentKernel(M, N, K,
-                    layout_A, layout_B,
-                    d_A, d_B, d_C);
+  launchStudentKernel(M, N, K,layout_A, layout_B,d_A, d_B, d_C);
   cudaDeviceSynchronize();
 
   std::vector<float> h_C(M * N);
