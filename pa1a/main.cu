@@ -1,7 +1,7 @@
 
 // Uncomment exactly ONE of these
 //#define USE_CUDA_MALLOC
- #define USE_CUDA_MALLOC_MANAGED
+#define USE_CUDA_MALLOC_MANAGED
 
 // Standard libraries you might need. You can add/remove as you like.
 #include <iostream>
@@ -88,7 +88,7 @@ static bool read_matrix_txt(const std::string& path,
 // You'll need this when writing your report.
 int main(int argc, char* argv[]) {
 
-  fs::path folder = "sample_0";
+  fs::path folder = "sample_3";
 
   fs::path A_path, B_path, C_path;
 
