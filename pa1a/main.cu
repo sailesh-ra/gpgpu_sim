@@ -1,7 +1,7 @@
 
 // Uncomment exactly ONE of these
-#define USE_CUDA_MALLOC
-// #define USE_CUDA_MALLOC_MANAGED
+//#define USE_CUDA_MALLOC
+ #define USE_CUDA_MALLOC_MANAGED
 
 // Standard libraries you might need. You can add/remove as you like.
 #include <iostream>
