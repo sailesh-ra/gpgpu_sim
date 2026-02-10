@@ -148,6 +148,10 @@ int main(int argc, char* argv[]) {
   size_t sizeB = K * N * sizeof(float);
   size_t sizeC = M * N * sizeof(float);
 
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+
   // cudaMalloc()...
   // Launch kernel and time it...
 
@@ -160,9 +164,26 @@ int main(int argc, char* argv[]) {
 
   cudaMemcpy(d_A,h_A.data(), sizeA, cudaMemcpyHostToDevice);
   cudaMemcpy(d_B,h_B.data(), sizeB, cudaMemcpyHostToDevice);
+  cudaMemset(d_C, 0, sizeC);
 
-  launchStudentKernel(M, N, K,layout_A, layout_B,d_A, d_B, d_C);
+// warm-up
+  launchStudentKernel(M, N, K, layout_A, layout_B, d_A, d_B, d_C);
   cudaDeviceSynchronize();
+
+  cudaEventRecord(start);
+
+  for (int i = 0; i < 100; i++){
+    launchStudentKernel(M, N, K,layout_A, layout_B,d_A, d_B, d_C);
+  } 
+
+  cudaEventRecord(stop);
+  cudaEventSynchronize(stop);
+
+  float ms = 0.0f;
+  cudaEventElapsedTime(&ms, start, stop);
+  ms /= 100.0f;
+
+  std::cout << "Kernel time (cudaMalloc): " << ms << " ms\n";
 
   std::vector<float> h_C(M * N);
   cudaMemcpy(h_C.data(), d_C, sizeC, cudaMemcpyDeviceToHost);
@@ -194,7 +215,37 @@ int main(int argc, char* argv[]) {
   std::memcpy(um_B, h_B.data(), sizeB);
   std::memset(um_C, 0, sizeC);
 
+  // prefetching to avoid timing the first-touch page faults
+  int dev = 0;
+  cudaGetDevice(&dev);
+  cudaMemPrefetchAsync(um_A, sizeA, dev);
+  cudaMemPrefetchAsync(um_B, sizeB, dev);
+  cudaMemPrefetchAsync(um_C, sizeC, dev);
+  //cudaDeviceSynchronize();
+
+  // warm-up
   launchStudentKernel(M, N, K, layout_A, layout_B, um_A, um_B, um_C);
+  cudaDeviceSynchronize();
+
+  cudaEventRecord(start);
+
+  for (int i = 0; i < 100; i++){
+    launchStudentKernel(M, N, K, layout_A, layout_B, um_A, um_B, um_C);
+  }
+  //cudaDeviceSynchronize();
+
+  cudaEventRecord(stop);
+  cudaEventSynchronize(stop);
+
+  float ms_um = 0.0f;
+  cudaEventElapsedTime(&ms_um, start, stop);
+
+  ms_um /= 100.0f;
+
+  std::cout << "Kernel time (cudaMallocManaged): " << ms_um << " ms\n";
+
+  // prefetch back to cpu before reading
+  cudaMemPrefetchAsync(um_C, sizeC, cudaCpuDeviceId);
   cudaDeviceSynchronize();
 
   std::vector<float> h_C_um(M * N);
@@ -208,6 +259,9 @@ int main(int argc, char* argv[]) {
   compare_C(h_C_um, h_C_ref, M, N);
 
   #endif
+
+  cudaEventDestroy(start);
+  cudaEventDestroy(stop);
 
   return 0;
 }
