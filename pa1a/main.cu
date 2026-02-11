@@ -2,6 +2,8 @@
 // Uncomment exactly ONE of these
 //#define USE_CUDA_MALLOC
 #define USE_CUDA_MALLOC_MANAGED
+//#define PREFETCH
+#define NO_PREFETCH
 
 // Standard libraries you might need. You can add/remove as you like.
 #include <iostream>
@@ -19,7 +21,37 @@
 #include <stdexcept>
 namespace fs = std::filesystem;
 
-void launchStudentKernel(int M, int N, int K,int layoutA, int layoutB,float* A, float* B, float* C);
+//Naive GEMM kernel : One thread computes one C(row,col) element
+__global__ void gemmNaiveKernel(const float* __restrict__ A,
+                                const float* __restrict__ B,
+                                float* __restrict__ C,
+                                int M, int N, int K,
+                                int layoutA, int layoutB)
+{
+    // Map thread to a single C element
+    int row = blockIdx.y * blockDim.y + threadIdx.y; // 0..M-1
+    int col = blockIdx.x * blockDim.x + threadIdx.x; // 0..N-1
+
+    if (row >= M || col >= N) return;
+
+    float acc = 0.0f;
+
+    // Dot product over K
+    for(int k = 0; k < K; k++){
+      // A is MxK, index A(row,k)
+      float a_val = (layoutA == 0) ? A[row * K + k] // row-major
+                                    : A[k * M + row]; // col-major
+
+      // B is KxN, index B(k,col)
+      float b_val = (layoutB == 0) ? B[k * N + col] // row-major
+                                    : B[col * K + k]; // col-major
+      
+      acc += a_val * b_val;
+    }
+
+    // C is MxN row-major
+    C[row * N + col] = acc;
+}
 
 
 static bool read_matrix_txt(const std::string& path,
@@ -144,6 +176,10 @@ int main(int argc, char* argv[]) {
     return 1;
     }
 
+  dim3 blockDim(16, 16);
+  dim3 gridDim((N + blockDim.x - 1) / blockDim.x,
+               (M + blockDim.y - 1) / blockDim.y);
+
   size_t sizeA = M * K * sizeof(float);
   size_t sizeB = K * N * sizeof(float);
   size_t sizeC = M * N * sizeof(float);
@@ -167,13 +203,14 @@ int main(int argc, char* argv[]) {
   cudaMemset(d_C, 0, sizeC);
 
 // warm-up
-  launchStudentKernel(M, N, K, layout_A, layout_B, d_A, d_B, d_C);
+
+  gemmNaiveKernel<<<gridDim, blockDim>>>(d_A, d_B, d_C, M, N, K,layout_A, layout_B);
   cudaDeviceSynchronize();
 
   cudaEventRecord(start);
 
   for (int i = 0; i < 100; i++){
-    launchStudentKernel(M, N, K,layout_A, layout_B,d_A, d_B, d_C);
+    gemmNaiveKernel<<<gridDim, blockDim>>>(d_A, d_B, d_C, M, N, K,layout_A, layout_B);
   } 
 
   cudaEventRecord(stop);
@@ -213,26 +250,47 @@ int main(int argc, char* argv[]) {
   // Init from host vectors
   std::memcpy(um_A, h_A.data(), sizeA);
   std::memcpy(um_B, h_B.data(), sizeB);
-  std::memset(um_C, 0, sizeC);
 
   // prefetching to avoid timing the first-touch page faults
   int dev = 0;
   cudaGetDevice(&dev);
+
+  #if defined(NO_PREFETCH)
+
+  std::memset(um_C, 0, sizeC);
+  cudaDeviceSynchronize(); // make memset visible + start from clean state
+
+  cudaEventRecord(start);
+  for (int i = 0; i < 100; i++) {
+    gemmNaiveKernel<<<gridDim, blockDim>>>(um_A, um_B, um_C, M, N, K, layout_A, layout_B);
+  }
+  cudaEventRecord(stop);
+  cudaEventSynchronize(stop);
+
+  float ms_no_pf = 0.0f;
+  cudaEventElapsedTime(&ms_no_pf, start, stop);
+  ms_no_pf /= 100.0f;
+
+  std::cout << "UM kernel time (NO prefetch): " << ms_no_pf << " ms\n";
+
+  #endif
+
+  #if defined(PREFETCH)
+  std::memset(um_C, 0, sizeC);
+
   cudaMemPrefetchAsync(um_A, sizeA, dev);
   cudaMemPrefetchAsync(um_B, sizeB, dev);
   cudaMemPrefetchAsync(um_C, sizeC, dev);
-  //cudaDeviceSynchronize();
-
-  // warm-up
-  launchStudentKernel(M, N, K, layout_A, layout_B, um_A, um_B, um_C);
   cudaDeviceSynchronize();
 
-  cudaEventRecord(start);
+  // warm-up
+  //  gemmNaiveKernel<<<gridDim, blockDim>>>(um_A, um_B, um_C, M, N, K, layout_A, layout_B);
+  //  cudaDeviceSynchronize();
 
+  cudaEventRecord(start);
   for (int i = 0; i < 100; i++){
-    launchStudentKernel(M, N, K, layout_A, layout_B, um_A, um_B, um_C);
+    gemmNaiveKernel<<<gridDim, blockDim>>>(um_A, um_B, um_C, M, N, K, layout_A, layout_B);
   }
-  //cudaDeviceSynchronize();
 
   cudaEventRecord(stop);
   cudaEventSynchronize(stop);
@@ -247,6 +305,8 @@ int main(int argc, char* argv[]) {
   // prefetch back to cpu before reading
   cudaMemPrefetchAsync(um_C, sizeC, cudaCpuDeviceId);
   cudaDeviceSynchronize();
+
+  #endif
 
   std::vector<float> h_C_um(M * N);
   std::memcpy(h_C_um.data(), um_C, sizeC);
