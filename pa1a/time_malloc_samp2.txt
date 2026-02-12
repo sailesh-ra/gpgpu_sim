@@ -1,2 +1,0 @@
-Kernel time (cudaMalloc): 0.0065136 ms
-[SUCCESS] Output matches reference (within tolerance)

@@ -1,4 +1,0 @@
-Kernel time (cudaMallocManaged): 0.0031744 ms
-
-[UM] Comparing Unified Memory result vs reference:
-[SUCCESS] Output matches reference (within tolerance)
