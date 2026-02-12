@@ -1,0 +1,9 @@
+# Large generated samples (do not commit)
+pa1a/sample_4/
+pa1a/sample_5/
+pa1a/sample_6/
+
+# Or, more general (optional):
+# pa1a/sample_*/A_4096_4096_*.txt
+# pa1a/sample_*/B_4096_4096_*.txt
+# pa1a/sample_*/C_4096_4096_*.txt
