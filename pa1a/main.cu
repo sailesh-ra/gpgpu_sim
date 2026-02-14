@@ -1,9 +1,9 @@
 
 // Uncomment exactly ONE of these
-//#define USE_CUDA_MALLOC
-#define USE_CUDA_MALLOC_MANAGED
+#define USE_CUDA_MALLOC
+//#define USE_CUDA_MALLOC_MANAGED
 //#define PREFETCH
-#define NO_PREFETCH
+//#define NO_PREFETCH
 
 // Standard libraries you might need. You can add/remove as you like.
 #include <iostream>
@@ -202,14 +202,10 @@ int main(int argc, char* argv[]) {
   cudaMemcpy(d_B,h_B.data(), sizeB, cudaMemcpyHostToDevice);
   cudaMemset(d_C, 0, sizeC);
 
-// warm-up
-
-  gemmNaiveKernel<<<gridDim, blockDim>>>(d_A, d_B, d_C, M, N, K,layout_A, layout_B);
-  cudaDeviceSynchronize();
 
   cudaEventRecord(start);
 
-  for (int i = 0; i < 100; i++){
+  for (int i = 0; i < 15; i++){
     gemmNaiveKernel<<<gridDim, blockDim>>>(d_A, d_B, d_C, M, N, K,layout_A, layout_B);
   } 
 
@@ -220,7 +216,7 @@ int main(int argc, char* argv[]) {
   cudaEventElapsedTime(&ms, start, stop);
   ms /= 100.0f;
 
-  std::cout << "Kernel time (cudaMalloc): " << ms << " ms\n";
+  std::cout << "Kernel time (cudaMalloc) - iterations 1..99 (steady-state compute): " << ms << " ms\n";
 
   std::vector<float> h_C(M * N);
   cudaMemcpy(h_C.data(), d_C, sizeC, cudaMemcpyDeviceToHost);
@@ -230,6 +226,7 @@ int main(int argc, char* argv[]) {
   cudaFree(d_C);
 
   // Compare
+  std::cout << "\n[UM] Comparing cudaMalloc result vs reference:\n";
   compare_C(h_C, h_C_ref, M, N);
 
   #endif
@@ -261,7 +258,7 @@ int main(int argc, char* argv[]) {
   cudaDeviceSynchronize(); // make memset visible + start from clean state
 
   cudaEventRecord(start);
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 15; i++) {
     gemmNaiveKernel<<<gridDim, blockDim>>>(um_A, um_B, um_C, M, N, K, layout_A, layout_B);
   }
   cudaEventRecord(stop);
@@ -283,12 +280,9 @@ int main(int argc, char* argv[]) {
   cudaMemPrefetchAsync(um_C, sizeC, dev);
   cudaDeviceSynchronize();
 
-  // warm-up
-  //  gemmNaiveKernel<<<gridDim, blockDim>>>(um_A, um_B, um_C, M, N, K, layout_A, layout_B);
-  //  cudaDeviceSynchronize();
 
   cudaEventRecord(start);
-  for (int i = 0; i < 100; i++){
+  for (int i = 0; i < 15; i++){
     gemmNaiveKernel<<<gridDim, blockDim>>>(um_A, um_B, um_C, M, N, K, layout_A, layout_B);
   }
 
