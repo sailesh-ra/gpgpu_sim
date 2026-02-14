@@ -1,9 +1,9 @@
 
 // Uncomment exactly ONE of these
-#define USE_CUDA_MALLOC
-//#define USE_CUDA_MALLOC_MANAGED
+//#define USE_CUDA_MALLOC
+#define USE_CUDA_MALLOC_MANAGED
 //#define PREFETCH
-//#define NO_PREFETCH
+#define NO_PREFETCH
 
 // Standard libraries you might need. You can add/remove as you like.
 #include <iostream>
@@ -205,7 +205,7 @@ int main(int argc, char* argv[]) {
 
   cudaEventRecord(start);
 
-  for (int i = 0; i < 100; i++){
+  for (int i = 0; i < 1; i++){
     gemmNaiveKernel<<<gridDim, blockDim>>>(d_A, d_B, d_C, M, N, K,layout_A, layout_B);
   } 
 
@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
 
   float ms = 0.0f;
   cudaEventElapsedTime(&ms, start, stop);
-  ms /= 100.0f;
+ /* ms /= 100.0f;*/
 
   std::cout << "Kernel time (cudaMalloc) - iterations 1..99 (steady-state compute): " << ms << " ms\n";
 
@@ -282,7 +282,7 @@ int main(int argc, char* argv[]) {
 
 
   cudaEventRecord(start);
-  for (int i = 0; i < 15; i++){
+  for (int i = 0; i < 100; i++){
     gemmNaiveKernel<<<gridDim, blockDim>>>(um_A, um_B, um_C, M, N, K, layout_A, layout_B);
   }
 
@@ -290,7 +290,7 @@ int main(int argc, char* argv[]) {
   cudaEventSynchronize(stop);
 
   float ms_pf = 0.0f;
-  cudaEventElapsedTime(&ms_um, start, stop);
+  cudaEventElapsedTime(&ms_pf, start, stop);
 
   ms_pf /= 100.0f;
 

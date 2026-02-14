@@ -1,0 +1,4 @@
+Kernel time (cudaMalloc) - iterations 1..99 (steady-state compute): 0.00635904 ms
+
+[UM] Comparing cudaMalloc result vs reference:
+[SUCCESS] Output matches reference (within tolerance)
