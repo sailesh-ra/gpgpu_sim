@@ -205,7 +205,7 @@ int main(int argc, char* argv[]) {
 
   cudaEventRecord(start);
 
-  for (int i = 0; i < 15; i++){
+  for (int i = 0; i < 100; i++){
     gemmNaiveKernel<<<gridDim, blockDim>>>(d_A, d_B, d_C, M, N, K,layout_A, layout_B);
   } 
 
@@ -258,7 +258,7 @@ int main(int argc, char* argv[]) {
   cudaDeviceSynchronize(); // make memset visible + start from clean state
 
   cudaEventRecord(start);
-  for (int i = 0; i < 15; i++) {
+  for (int i = 0; i < 100; i++) {
     gemmNaiveKernel<<<gridDim, blockDim>>>(um_A, um_B, um_C, M, N, K, layout_A, layout_B);
   }
   cudaEventRecord(stop);
@@ -289,12 +289,12 @@ int main(int argc, char* argv[]) {
   cudaEventRecord(stop);
   cudaEventSynchronize(stop);
 
-  float ms_um = 0.0f;
+  float ms_pf = 0.0f;
   cudaEventElapsedTime(&ms_um, start, stop);
 
-  ms_um /= 100.0f;
+  ms_pf /= 100.0f;
 
-  std::cout << "Kernel time (cudaMallocManaged): " << ms_um << " ms\n";
+  std::cout << "UM_Kernel time(PREFETCH) : " << ms_pf << " ms\n";
 
   // prefetch back to cpu before reading
   cudaMemPrefetchAsync(um_C, sizeC, cudaCpuDeviceId);
