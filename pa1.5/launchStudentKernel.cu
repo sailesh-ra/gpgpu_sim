@@ -55,8 +55,10 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
             int row = i % 16;
             int gk  = iter * 16 + row;
             int gn  = out_col + col;
-            warp_B[col * 16 + row] = (gk < K && gn < N) ? B[gk * N + gn] : __float2half(0.f);
-        }
+            // Column-major global B: B(k,n) at k + n*K
+            warp_B[col * 16 + row] =
+            (gk < K && gn < N) ? B[gk + gn * K] : __float2half(0.f);
+          }
 
         __syncthreads();
         mma_m16n8k16_f16_f16_smem_row_col(warp_A, warp_B, warp_C);
