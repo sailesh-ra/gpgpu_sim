@@ -23,14 +23,19 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
     int out_row = blockIdx.y * 32 + warp_row * 16;
     int out_col = blockIdx.x * 32 + warp_col * 8;
 
-    __shared__ __half A_shared[256];
-    __shared__ __half B_shared[128];
-    __shared__ float  C_shared[128];
+    __shared__ __half A_shared[8*256];
+    __shared__ __half B_shared[8*128];
+    __shared__ float  C_shared[8*128];
+
+    // Each warp gets a pointer to its own slice
+  __half *warp_A = A_shared + warpID * 256;
+  __half *warp_B = B_shared + warpID * 128;
+  float  *warp_C = C_shared + warpID * 128;
 
     // Initialize C_shared to 0
     for (int i = laneID; i < 128; i += 32)
-        C_shared[i] = 0.0f;
-    __syncwarp();
+        warp_C[i] = 0.0f;
+    __syncthreads();
 
     // K loop
     for (int iter = 0; iter < K/16; iter++) {
@@ -39,25 +44,25 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
         for (int i = laneID; i < 256; i += 32) {
             int row = i / 16;
             int col = i % 16;
-            A_shared[i] = A[(out_row + row) * K + (iter * 16 + col)];
+            warp_A[i] = A[(out_row + row) * K + (iter * 16 + col)];
         }
 
         // Load B (col-major)
         for (int i = laneID; i < 128; i += 32) {
             int col = i / 16;
             int row = i % 16;
-            B_shared[i] = B[(iter * 16 + row) + (out_col + col) * K];
+            warp_B[i] = B[(iter * 16 + row) + (out_col + col) * K];
         }
 
-        __syncwarp();
-        mma_m16n8k16_f16_f16_smem_row_col(A_shared, B_shared, C_shared);
+        __syncthreads();
+        mma_m16n8k16_f16_f16_smem_row_col(warp_A, warp_B, warp_C);
     }
 
     // Store C back to global
     for (int i = laneID; i < 128; i += 32) {
         int row = i / 8;
         int col = i % 8;
-        C[(out_row + row) * N + (out_col + col)] = C_shared[i];
+        C[(out_row + row) * N + (out_col + col)] = warp_C[i];
     }
 
 }
