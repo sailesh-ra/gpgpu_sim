@@ -28,9 +28,9 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
     __shared__ float  C_shared[8*128];
 
     // Each warp gets a pointer to its own slice
-  __half *warp_A = A_shared + warpID * 256;
-  __half *warp_B = B_shared + warpID * 128;
-  float  *warp_C = C_shared + warpID * 128;
+    __half *warp_A = A_shared + warpID * 256;
+    __half *warp_B = B_shared + warpID * 128;
+    float  *warp_C = C_shared + warpID * 128;
 
     // Initialize C_shared to 0
     for (int i = laneID; i < 128; i += 32)
@@ -40,31 +40,38 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
     // K loop
     for (int iter = 0; iter < K/16; iter++) {
 
-        // Load A (row-major)
+        // Load A (row-major global → row-major shared)
         for (int i = laneID; i < 256; i += 32) {
             int row = i / 16;
             int col = i % 16;
-            warp_A[i] = A[(out_row + row) * K + (iter * 16 + col)];
+            int gr  = out_row + row;
+            int gk  = iter * 16 + col;
+            warp_A[i] = (gr < M && gk < K) ? A[gr * K + gk] : __float2half(0.f);
         }
 
-        // Load B (col-major)
+        // Load B (row-major global → col-major shared)
         for (int i = laneID; i < 128; i += 32) {
             int col = i / 16;
             int row = i % 16;
-            warp_B[i] = B[(iter * 16 + row) + (out_col + col) * K];
+            int gk  = iter * 16 + row;
+            int gn  = out_col + col;
+            warp_B[col * 16 + row] = (gk < K && gn < N) ? B[gk * N + gn] : __float2half(0.f);
         }
 
         __syncthreads();
         mma_m16n8k16_f16_f16_smem_row_col(warp_A, warp_B, warp_C);
+        __syncthreads();
     }
 
     // Store C back to global
     for (int i = laneID; i < 128; i += 32) {
         int row = i / 8;
         int col = i % 8;
-        C[(out_row + row) * N + (out_col + col)] = warp_C[i];
+        int gr  = out_row + row;
+        int gn  = out_col + col;
+        if (gr < M && gn < N)
+            C[gr * N + gn] = warp_C[i];
     }
-
 }
 
 void launchStudentKernel(int M, int N, int K, __half* A,
