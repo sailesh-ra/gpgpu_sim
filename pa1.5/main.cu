@@ -134,8 +134,12 @@ int main(int argc, char* argv[]) {
     CHECK_CUDA(cudaGetLastError());
     CHECK_CUDA(cudaDeviceSynchronize());
 
+    int runs = 10;
+
     CHECK_CUDA(cudaEventRecord(start));
+    for (int r = 0; r < runs; r++) {
     tensorcore_gemm<<<gridDim, blockDim>>>(dA, dB, dC, M, N, K);
+    }
     CHECK_CUDA(cudaGetLastError());
     CHECK_CUDA(cudaEventRecord(stop));
 
