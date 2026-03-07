@@ -1,0 +1,28 @@
+M=64 N=64 K=64
+Launching grid=(4,4), block=(16,16)
+Kernel time: 0.00657408 ms
+Performance: 0.0797508 TFLOP/s
+M=128 N=128 K=128
+Launching grid=(8,8), block=(16,16)
+Kernel time: 0.0203162 ms
+Performance: 0.206452 TFLOP/s
+M=256 N=256 K=256
+Launching grid=(16,16), block=(16,16)
+Kernel time: 0.0947507 ms
+Performance: 0.354134 TFLOP/s
+M=512 N=512 K=512
+Launching grid=(32,32), block=(16,16)
+Kernel time: 0.666634 ms
+Performance: 0.402673 TFLOP/s
+M=1024 N=1024 K=1024
+Launching grid=(64,64), block=(16,16)
+Kernel time: 5.20192 ms
+Performance: 0.412825 TFLOP/s
+M=2048 N=2048 K=2048
+Launching grid=(128,128), block=(16,16)
+Kernel time: 41.1997 ms
+Performance: 0.41699 TFLOP/s
+M=4096 N=4096 K=4096
+Launching grid=(256,256), block=(16,16)
+Kernel time: 341.979 ms
+Performance: 0.401893 TFLOP/s
