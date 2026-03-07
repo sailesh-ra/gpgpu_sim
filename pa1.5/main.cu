@@ -5,6 +5,9 @@
 #include <ctime>
 #include <iomanip>
 #include <vector>
+#include <cuda_fp16.h>
+#include <cuda_runtime.h>
+#include "mma_intrinsics.cuh"
 
 __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, int K) {
     int warpID  = threadIdx.x / 32;
@@ -119,8 +122,8 @@ int main(int argc, char* argv[]) {
     CHECK_CUDA(cudaMemcpy(dB, hB.data(), sizeB * sizeof(__half), cudaMemcpyHostToDevice));
     CHECK_CUDA(cudaMemset(dC, 0, sizeC * sizeof(float)));
 
-    dim3 blockDim(256);
-    dim3 gridDim(N/32, M/32);
+    dim3 block(256);
+    dim3 grid(N/32, M/32);
 
     std::cout << "Launching grid=(" << gridDim.x << "," << gridDim.y
               << "), block=(" << blockDim.x << ")\n";
@@ -134,7 +137,7 @@ int main(int argc, char* argv[]) {
     CHECK_CUDA(cudaGetLastError());
     CHECK_CUDA(cudaDeviceSynchronize());
 
-    int runs = 10;
+    int runs = 100;
 
     CHECK_CUDA(cudaEventRecord(start));
     for (int r = 0; r < runs; r++) {
