@@ -8,6 +8,17 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include "mma_intrinsics.cuh"
+#include <cassert>
+
+#define CHECK_CUDA(call)                                                   \
+do {                                                                       \
+    cudaError_t err = (call);                                              \
+    if (err != cudaSuccess) {                                              \
+        std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__       \
+                  << " -> " << cudaGetErrorString(err) << std::endl;       \
+        std::exit(EXIT_FAILURE);                                           \
+    }                                                                      \
+} while (0)
 
 __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, int K) {
     int warpID  = threadIdx.x / 32;
