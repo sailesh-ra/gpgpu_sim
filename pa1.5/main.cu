@@ -136,15 +136,15 @@ int main(int argc, char* argv[]) {
     dim3 block(256);
     dim3 grid(N/32, M/32);
 
-    std::cout << "Launching grid=(" << gridDim.x << "," << gridDim.y
-              << "), block=(" << blockDim.x << ")\n";
+    std::cout << "Launching grid=(" << grid.x << "," << grid.y
+              << "), block=(" << block.x << ")\n";
 
     cudaEvent_t start, stop;
     CHECK_CUDA(cudaEventCreate(&start));
     CHECK_CUDA(cudaEventCreate(&stop));
 
     // Optional warmup
-    tensorcore_gemm<<<gridDim, blockDim>>>(dA, dB, dC, M, N, K);
+    tensorcore_gemm<<<grid, block>>>(dA, dB, dC, M, N, K);
     CHECK_CUDA(cudaGetLastError());
     CHECK_CUDA(cudaDeviceSynchronize());
 
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
 
     CHECK_CUDA(cudaEventRecord(start));
     for (int r = 0; r < runs; r++) {
-    tensorcore_gemm<<<gridDim, blockDim>>>(dA, dB, dC, M, N, K);
+    tensorcore_gemm<<<grid, block>>>(dA, dB, dC, M, N, K);
     }
     CHECK_CUDA(cudaGetLastError());
     CHECK_CUDA(cudaEventRecord(stop));
