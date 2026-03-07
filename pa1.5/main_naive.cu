@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
     CHECK_CUDA(cudaDeviceSynchronize());
 
     // Choose more runs for smaller problems
-    int runs = (M <= 512 && N <= 512 && K <= 512) ? 100 : 10;
+    int runs =  100 //(M <= 512 && N <= 512 && K <= 512) ? 100 : 10;
 
     CHECK_CUDA(cudaEventRecord(start));
     for (int r = 0; r < runs; r++) {
