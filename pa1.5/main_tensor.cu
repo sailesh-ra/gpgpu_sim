@@ -161,6 +161,7 @@ int main(int argc, char* argv[]) {
 
     float elapsed_ms = 0.0f;
     CHECK_CUDA(cudaEventElapsedTime(&elapsed_ms, start, stop));
+    elapsed_ms /= runs;
 
     CHECK_CUDA(cudaMemcpy(hC.data(), dC, sizeC * sizeof(float), cudaMemcpyDeviceToHost));
 
