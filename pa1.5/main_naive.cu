@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <cmath>
 #include <stdexcept>
+#include <cassert>
 
 #define CHECK_CUDA(call)                                                   \
 do {                                                                       \
