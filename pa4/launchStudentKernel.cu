@@ -73,12 +73,14 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
         pipeline.producer_commit();
 
         pipeline.consumer_wait();
+        __syncthreads();
         mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[compute_idx], B_stage[compute_idx], C_smem);
         pipeline.consumer_release();
     }
 
     // ── EPILOG: consume last tile ─────────────────────────────────
     pipeline.consumer_wait();
+    __syncthreads();
     mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-1) % 2],
                                               B_stage[(num_batches-1) % 2],
                                               C_smem);
