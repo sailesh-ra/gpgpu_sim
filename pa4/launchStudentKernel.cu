@@ -8,6 +8,7 @@
 
 #include "mma_intrinsics.cuh"
 #include <cooperative_groups.h>
+#include <cuda/pipeline>
 
 __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, int K) {
 
@@ -17,13 +18,13 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
 
     extern __shared__ __align__(128) int8_t smem[];
 
-    __half *A_smem = (__half*)(smem);
-    __half *B_smem = (__half*)(smem + 2 * 64 * 64 * sizeof(__half));
-    float  *C_smem = (float*) (smem + 4 * 64 * 64 * sizeof(__half));
-
     // Block-scoped pipeline shared state (2 stages) in shared memory
     __shared__ cuda::pipeline_shared_state
         cuda::thread_scope_block, 2> pipeline_state;
+
+    __half *A_smem = (__half*)(smem);
+    __half *B_smem = (__half*)(smem + 2 * 64 * 64 * sizeof(__half));
+    float  *C_smem = (float*) (smem + 4 * 64 * 64 * sizeof(__half));
 
     __half *A_stage[2] = { A_smem, A_smem + 64*64 };
     __half *B_stage[2] = { B_smem, B_smem + 64*64 };
