@@ -12,6 +12,8 @@
 #pragma nv_diag_suppress static_var_with_dynamic_init
 #include "mma_intrinsics.cuh"
 #include <cassert>
+#include <cooperative_groups.h>
+#include <cuda/pipeline>
 
 #define CHECK_CUDA(call)                                                   \
 do {                                                                       \
