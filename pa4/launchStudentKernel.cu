@@ -18,89 +18,85 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
 
     extern __shared__ __align__(128) int8_t smem[];
 
-    // Block-scoped pipeline shared state (2 stages) in shared memory
-    using pipeline_state_t = cuda::pipeline_shared_state<cuda::thread_scope_block, 2>;
-    __shared__ pipeline_state_t pipeline_state;
+__global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, int K) {
 
-    __half *A_smem = (__half*)(smem);
-    __half *B_smem = (__half*)(smem + 2 * 64 * 64 * sizeof(__half));
-    float  *C_smem = (float*) (smem + 4 * 64 * 64 * sizeof(__half));
+    int tid     = threadIdx.x;
+    int out_row = blockIdx.y * 64;
+    int out_col = blockIdx.x * 64;
 
-    __half *A_stage[2] = { A_smem, A_smem + 64*64 };
-    __half *B_stage[2] = { B_smem, B_smem + 64*64 };
+    extern __shared__ __align__(128) int8_t smem[];
 
-    for (int i = tid; i < 64*64; i += 128)
-        C_smem[i] = 0.0f;
-    __syncthreads();
+    // 1. Pipeline state: 2 → 3
+using pipeline_state_t = cuda::pipeline_shared_state<cuda::thread_scope_block, 3>;
+__shared__ pipeline_state_t pipeline_state;
 
-    auto tb       = cooperative_groups::this_thread_block();
-    auto pipeline = cuda::make_pipeline(tb, &pipeline_state);
+// 2. Three stage pointers instead of two
+__half *A_stage[3] = { A_smem, A_smem + 64*64, A_smem + 2*64*64 };
+__half *B_stage[3] = { B_smem, B_smem + 64*64, B_smem + 2*64*64 };
 
-    int num_batches = K / 64;
+// 3. Prolog: prefetch TWO tiles before entering the loop
+// --- stage 0 ---
+pipeline.producer_acquire();
+for (int row = tid; row < 64; row += 128)
+    cuda::memcpy_async(&A_stage[0][row*64], &A[(out_row+row)*K + 0],
+                       cuda::aligned_size_t<16>(64*sizeof(__half)), pipeline);
+for (int col = tid; col < 64; col += 128)
+    cuda::memcpy_async(&B_stage[0][col*64], &B[0 + (out_col+col)*K],
+                       cuda::aligned_size_t<16>(64*sizeof(__half)), pipeline);
+pipeline.producer_commit();
 
-    // PROLOG
+// --- stage 1 (only if num_batches > 1) ---
+if (num_batches > 1) {
     pipeline.producer_acquire();
-    // A: 64 rows, each row = 64 halfs = 128 bytes, contiguous in global (row-major)
-    for (int row = tid; row < 64; row += 128) {
-        cuda::memcpy_async(
-            &A_stage[0][row * 64],
-            &A[(out_row + row) * K + 0],           // k_base=0 for prolog
-            cuda::aligned_size_t<16>(64 * sizeof(__half)),  // 128 bytes at once
-            pipeline
-        );
-    }
-
-    // B: 64 cols, each col = 64 halfs = 128 bytes, contiguous in global (col-major)
-    for (int col = tid; col < 64; col += 128) {
-        cuda::memcpy_async(
-            &B_stage[0][col * 64],
-            &B[0 + (out_col + col) * K],           // k_base=0 for prolog
-            cuda::aligned_size_t<16>(64 * sizeof(__half)),
-            pipeline
-        );
-    }
-
+    for (int row = tid; row < 64; row += 128)
+        cuda::memcpy_async(&A_stage[1][row*64], &A[(out_row+row)*K + 64],
+                           cuda::aligned_size_t<16>(64*sizeof(__half)), pipeline);
+    for (int col = tid; col < 64; col += 128)
+        cuda::memcpy_async(&B_stage[1][col*64], &B[64 + (out_col+col)*K],
+                           cuda::aligned_size_t<16>(64*sizeof(__half)), pipeline);
     pipeline.producer_commit();
-    #pragma unroll 4
-    // MAIN LOOP — no __syncthreads() needed inside
-    for (int batch = 1; batch < num_batches; batch++) {
-        int copy_idx    = batch % 2;
-        int compute_idx = (batch - 1) % 2;
-        int k_base      = batch * 64;
+}
 
-        pipeline.producer_acquire();
-        for (int row = tid; row < 64; row += 128) {
-            cuda::memcpy_async(
-                &A_stage[copy_idx][row * 64],
-                &A[(out_row + row) * K + k_base],
-                cuda::aligned_size_t<16>(64 * sizeof(__half)),
-                pipeline
-            );
-        }
-        for (int col = tid; col < 64; col += 128) {
-            cuda::memcpy_async(
-                &B_stage[copy_idx][col * 64],
-                &B[k_base + (out_col + col) * K],
-                cuda::aligned_size_t<16>(64 * sizeof(__half)),
-                pipeline
-            );
-        }
-        pipeline.producer_commit();
+// 4. Main loop: starts at batch=2, computes batch-2
+#pragma unroll 4
+for (int batch = 2; batch < num_batches; batch++) {
+    int copy_idx    = batch % 3;
+    int compute_idx = (batch - 2) % 3;
+    int k_base      = batch * 64;
 
+    pipeline.producer_acquire();
+    for (int row = tid; row < 64; row += 128)
+        cuda::memcpy_async(&A_stage[copy_idx][row*64],
+                           &A[(out_row+row)*K + k_base],
+                           cuda::aligned_size_t<16>(64*sizeof(__half)), pipeline);
+    for (int col = tid; col < 64; col += 128)
+        cuda::memcpy_async(&B_stage[copy_idx][col*64],
+                           &B[k_base + (out_col+col)*K],
+                           cuda::aligned_size_t<16>(64*sizeof(__half)), pipeline);
+    pipeline.producer_commit();
+
+    pipeline.consumer_wait();
+    mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[compute_idx], B_stage[compute_idx], C_smem);
+    pipeline.consumer_release();
+}
+
+// Drain tile prefetched in prolog stage 0
+    pipeline.consumer_wait();
+    mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-2)%3],
+                                              B_stage[(num_batches-2)%3], C_smem);
+    pipeline.consumer_release();
+
+    // Drain tile prefetched in prolog stage 1
+    if (num_batches > 1) {
         pipeline.consumer_wait();
-        mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[compute_idx], B_stage[compute_idx], C_smem);
+        mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-1)%3],
+                                                  B_stage[(num_batches-1)%3], C_smem);
         pipeline.consumer_release();
     }
 
-    // EPILOG
-    pipeline.consumer_wait();
-    mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-1) % 2],
-                                              B_stage[(num_batches-1) % 2],
-                                              C_smem);
-    pipeline.consumer_release();
-
     __syncthreads();
 
+    // Store C_smem → global C
     for (int i = tid; i < 64*64; i += 128) {
         int row = i / 64, col = i % 64;
         int gr = out_row + row, gn = out_col + col;
