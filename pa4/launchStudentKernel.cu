@@ -57,7 +57,7 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
                            cuda::aligned_size_t<16>(64*sizeof(__half)), pipeline);
     pipeline.producer_commit();
 
-    // PROLOG stage 1
+    // PROLOG stage 1 (only if K has at least 2 batches)
     if (num_batches > 1) {
         pipeline.producer_acquire();
         for (int row = tid; row < 64; row += 128)
@@ -69,7 +69,7 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
         pipeline.producer_commit();
     }
 
-    // MAIN LOOP
+    // MAIN LOOP: starts at batch 2, computes batch-2
     #pragma unroll 4
     for (int batch = 2; batch < num_batches; batch++) {
         int copy_idx    = batch % 3;
@@ -92,19 +92,14 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
         pipeline.consumer_release();
     }
 
-    // EPILOG: drain stage num_batches-2
-    pipeline.consumer_wait();
-    mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-2)%3],
-                                              B_stage[(num_batches-2)%3], C_smem);
-    pipeline.consumer_release();
-
-    // EPILOG: num_batches=1 only has stage 0 to drain
-    // num_batches>=2 has two stages to drain
+    // EPILOG
     if (num_batches == 1) {
+        // Only stage 0 was loaded
         pipeline.consumer_wait();
         mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[0], B_stage[0], C_smem);
         pipeline.consumer_release();
     } else {
+        // Drain the two stages prefetched in the prolog
         pipeline.consumer_wait();
         mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-2)%3],
                                                   B_stage[(num_batches-2)%3], C_smem);
