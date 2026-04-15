@@ -19,8 +19,8 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
     extern __shared__ __align__(128) int8_t smem[];
 
     // Block-scoped pipeline shared state (2 stages) in shared memory
-    __shared__ cuda::pipeline_shared_state
-        cuda::thread_scope_block, 2> pipeline_state;
+    using pipeline_state_t = cuda::pipeline_shared_state<cuda::thread_scope_block, 2>;
+    __shared__ pipeline_state_t pipeline_state;
 
     __half *A_smem = (__half*)(smem);
     __half *B_smem = (__half*)(smem + 2 * 64 * 64 * sizeof(__half));
