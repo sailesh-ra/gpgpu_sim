@@ -97,14 +97,18 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
         pipeline.consumer_release();
     }
 
-    // EPILOG: drain stage num_batches-2
-    pipeline.consumer_wait();
-    mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-2)%3],
-                                              B_stage[(num_batches-2)%3], C_smem);
-    pipeline.consumer_release();
+    // EPILOG: num_batches=1 only has stage 0 to drain
+    // num_batches>=2 has two stages to drain
+    if (num_batches == 1) {
+        pipeline.consumer_wait();
+        mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[0], B_stage[0], C_smem);
+        pipeline.consumer_release();
+    } else {
+        pipeline.consumer_wait();
+        mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-2)%3],
+                                                  B_stage[(num_batches-2)%3], C_smem);
+        pipeline.consumer_release();
 
-    // EPILOG: drain stage num_batches-1
-    if (num_batches > 1) {
         pipeline.consumer_wait();
         mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-1)%3],
                                                   B_stage[(num_batches-1)%3], C_smem);
