@@ -7,6 +7,7 @@
 #pragma nv_diag_suppress static_var_with_dynamic_init
 
 #include "mma_intrinsics.cuh"
+#include <cooperative_groups.h>
 
 __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, int K) {
 
@@ -14,28 +15,29 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
     int out_row = blockIdx.y * 64;
     int out_col = blockIdx.x * 64;
 
-    // smem layout: [ A_ping | A_pong | B_ping | B_pong | C_tile ]
-    //   A/B stages : 2 × 64×64 × sizeof(__half) = 16384 bytes each
-    //   C tile     : 64×64 × sizeof(float)       = 16384 bytes
-    //   Total      : 49152 bytes < 65536 ✓
     extern __shared__ __align__(128) int8_t smem[];
 
     __half *A_smem = (__half*)(smem);
     __half *B_smem = (__half*)(smem + 2 * 64 * 64 * sizeof(__half));
     float  *C_smem = (float*) (smem + 4 * 64 * 64 * sizeof(__half));
 
+    // Block-scoped pipeline shared state (2 stages) in shared memory
+    __shared__ cuda::pipeline_shared_state
+        cuda::thread_scope_block, 2> pipeline_state;
+
     __half *A_stage[2] = { A_smem, A_smem + 64*64 };
     __half *B_stage[2] = { B_smem, B_smem + 64*64 };
 
-    // Initialize C tile in shared memory to 0
     for (int i = tid; i < 64*64; i += 128)
         C_smem[i] = 0.0f;
     __syncthreads();
 
-    int num_batches = K / 64;
-    auto pipeline = cuda::make_pipeline();
+    auto tb       = cooperative_groups::this_thread_block();
+    auto pipeline = cuda::make_pipeline(tb, &pipeline_state);
 
-    // ── PROLOG: load batch 0 → stage 0 ───────────────────────────
+    int num_batches = K / 64;
+
+    // PROLOG
     pipeline.producer_acquire();
     for (int i = tid; i < 64*64; i += 128) {
         int row = i / 64, col = i % 64;
@@ -51,7 +53,7 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
     }
     pipeline.producer_commit();
 
-    // ── MAIN LOOP: batch 1 .. num_batches-1 ──────────────────────
+    // MAIN LOOP — no __syncthreads() needed inside
     for (int batch = 1; batch < num_batches; batch++) {
         int copy_idx    = batch % 2;
         int compute_idx = (batch - 1) % 2;
@@ -72,24 +74,21 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
         }
         pipeline.producer_commit();
 
+        // consumer_wait() is now block-level — replaces __syncthreads()
         pipeline.consumer_wait();
-        __syncthreads();
         mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[compute_idx], B_stage[compute_idx], C_smem);
         pipeline.consumer_release();
     }
 
-    // ── EPILOG: consume last tile ─────────────────────────────────
+    // EPILOG
     pipeline.consumer_wait();
-    __syncthreads();
     mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[(num_batches-1) % 2],
                                               B_stage[(num_batches-1) % 2],
                                               C_smem);
     pipeline.consumer_release();
 
-    // All warps done writing C_smem before any thread reads it
     __syncthreads();
 
-    // ── Store C_smem → global C (row-major) ──────────────────────
     for (int i = tid; i < 64*64; i += 128) {
         int row = i / 64, col = i % 64;
         int gr = out_row + row, gn = out_col + col;
