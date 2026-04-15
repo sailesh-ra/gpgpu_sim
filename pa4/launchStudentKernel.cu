@@ -40,18 +40,26 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
 
     // PROLOG
     pipeline.producer_acquire();
-    for (int i = tid; i < 64*64; i += 128) {
-        int row = i / 64, col = i % 64;
-        cuda::memcpy_async(&A_stage[0][i],
-                           &A[(out_row + row) * K + col],
-                           cuda::aligned_size_t<2>(sizeof(__half)), pipeline);
+    // A: 64 rows, each row = 64 halfs = 128 bytes, contiguous in global (row-major)
+    for (int row = tid; row < 64; row += 128) {
+        cuda::memcpy_async(
+            &A_stage[0][row * 64],
+            &A[(out_row + row) * K + 0],           // k_base=0 for prolog
+            cuda::aligned_size_t<16>(64 * sizeof(__half)),  // 128 bytes at once
+            pipeline
+        );
     }
-    for (int i = tid; i < 64*64; i += 128) {
-        int col = i / 64, row = i % 64;
-        cuda::memcpy_async(&B_stage[0][col * 64 + row],
-                           &B[row + (out_col + col) * K],
-                           cuda::aligned_size_t<2>(sizeof(__half)), pipeline);
+
+    // B: 64 cols, each col = 64 halfs = 128 bytes, contiguous in global (col-major)
+    for (int col = tid; col < 64; col += 128) {
+        cuda::memcpy_async(
+            &B_stage[0][col * 64],
+            &B[0 + (out_col + col) * K],           // k_base=0 for prolog
+            cuda::aligned_size_t<16>(64 * sizeof(__half)),
+            pipeline
+        );
     }
+
     pipeline.producer_commit();
 
     // MAIN LOOP — no __syncthreads() needed inside
@@ -61,21 +69,24 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
         int k_base      = batch * 64;
 
         pipeline.producer_acquire();
-        for (int i = tid; i < 64*64; i += 128) {
-            int row = i / 64, col = i % 64;
-            cuda::memcpy_async(&A_stage[copy_idx][i],
-                               &A[(out_row + row) * K + (k_base + col)],
-                               cuda::aligned_size_t<2>(sizeof(__half)), pipeline);
+        for (int row = tid; row < 64; row += 128) {
+            cuda::memcpy_async(
+                &A_stage[copy_idx][row * 64],
+                &A[(out_row + row) * K + k_base],
+                cuda::aligned_size_t<16>(64 * sizeof(__half)),
+                pipeline
+            );
         }
-        for (int i = tid; i < 64*64; i += 128) {
-            int col = i / 64, row = i % 64;
-            cuda::memcpy_async(&B_stage[copy_idx][col * 64 + row],
-                               &B[(k_base + row) + (out_col + col) * K],
-                               cuda::aligned_size_t<2>(sizeof(__half)), pipeline);
+        for (int col = tid; col < 64; col += 128) {
+            cuda::memcpy_async(
+                &B_stage[copy_idx][col * 64],
+                &B[k_base + (out_col + col) * K],
+                cuda::aligned_size_t<16>(64 * sizeof(__half)),
+                pipeline
+            );
         }
         pipeline.producer_commit();
 
-        // consumer_wait() is now block-level — replaces __syncthreads()
         pipeline.consumer_wait();
         mma_m16n8k16_f16_f16_smem_row_col_64x64(A_stage[compute_idx], B_stage[compute_idx], C_smem);
         pipeline.consumer_release();
