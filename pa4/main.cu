@@ -76,7 +76,7 @@ __global__ void tensorcore_gemm(__half *A, __half *B, float *C, int M, int N, in
     }
 
     pipeline.producer_commit();
-
+    #pragma unroll 4
     // MAIN LOOP — no __syncthreads() needed inside
     for (int batch = 1; batch < num_batches; batch++) {
         int copy_idx    = batch % 2;
