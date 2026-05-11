@@ -1,0 +1,181 @@
+=============================================================
+TASK 1 - CACHE EFFICIENCY ANALYSIS - IPC RESULTS
+=============================================================
+
+---[ BYPASS ON (-gpgpu_gmem_skip_L1D 1) ]---
+
+BFS:
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=1  | gpu_ipc = 67.3758
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=2  | gpu_ipc = 59.6617
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=3  | gpu_ipc = 50.9865
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=4  | gpu_ipc = 40.2290
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=5  | gpu_ipc = 32.2584
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=6  | gpu_ipc = 31.5100
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=7  | gpu_ipc = 40.9166
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=8  | gpu_ipc = 56.8447
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=9  | gpu_ipc = 113.7748
+
+BP:
+  kernel_name = _Z22bpnn_layerforward_CUDAPfS_S_S_ii  | uid=1  | gpu_ipc = 712.9353
+  kernel_name = _Z24bpnn_adjust_weights_cudaPfiS_iS_S_ | uid=2  | gpu_ipc = 126.9964
+
+HS:
+  kernel_name = _Z14calculate_tempiPfS_S_iiiiffffff    | uid=1  | gpu_ipc = 366.1858
+
+LPS:
+  kernel_name = (single kernel)                  | uid=1  | gpu_ipc = 545.6426
+
+LUD:
+  kernel_name = _Z12lud_diagonalPfii             | uid=1  | gpu_ipc = 0.8342
+  kernel_name = _Z13lud_perimeterPfii            | uid=2  | gpu_ipc = 22.8194
+  kernel_name = _Z12lud_internalPfii             | uid=3  | gpu_ipc = 326.3870
+  kernel_name = _Z12lud_diagonalPfii             | uid=4  | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=5  | gpu_ipc = 22.0443
+  kernel_name = _Z12lud_internalPfii             | uid=6  | gpu_ipc = 317.9300
+  kernel_name = _Z12lud_diagonalPfii             | uid=7  | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=8  | gpu_ipc = 20.5372
+  kernel_name = _Z12lud_internalPfii             | uid=9  | gpu_ipc = 291.5305
+  kernel_name = _Z12lud_diagonalPfii             | uid=10 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=11 | gpu_ipc = 18.9236
+  kernel_name = _Z12lud_internalPfii             | uid=12 | gpu_ipc = 255.2592
+  kernel_name = _Z12lud_diagonalPfii             | uid=13 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=14 | gpu_ipc = 17.4015
+  kernel_name = _Z12lud_internalPfii             | uid=15 | gpu_ipc = 230.7529
+  kernel_name = _Z12lud_diagonalPfii             | uid=16 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=17 | gpu_ipc = 15.8610
+  kernel_name = _Z12lud_internalPfii             | uid=18 | gpu_ipc = 206.9248
+  kernel_name = _Z12lud_diagonalPfii             | uid=19 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=20 | gpu_ipc = 14.2946
+  kernel_name = _Z12lud_internalPfii             | uid=21 | gpu_ipc = 179.6369
+  kernel_name = _Z12lud_diagonalPfii             | uid=22 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=23 | gpu_ipc = 12.7309
+  kernel_name = _Z12lud_internalPfii             | uid=24 | gpu_ipc = 152.3141
+  kernel_name = _Z12lud_diagonalPfii             | uid=25 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=26 | gpu_ipc = 11.1566
+  kernel_name = _Z12lud_internalPfii             | uid=27 | gpu_ipc = 121.8041
+  kernel_name = _Z12lud_diagonalPfii             | uid=28 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=29 | gpu_ipc = 9.5734
+  kernel_name = _Z12lud_internalPfii             | uid=30 | gpu_ipc = 93.7268
+  kernel_name = _Z12lud_diagonalPfii             | uid=31 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=32 | gpu_ipc = 7.9756
+  kernel_name = _Z12lud_internalPfii             | uid=33 | gpu_ipc = 68.4110
+  kernel_name = _Z12lud_diagonalPfii             | uid=34 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=35 | gpu_ipc = 6.3822
+  kernel_name = _Z12lud_internalPfii             | uid=36 | gpu_ipc = 44.4568
+  kernel_name = _Z12lud_diagonalPfii             | uid=37 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=38 | gpu_ipc = 4.7927
+  kernel_name = _Z12lud_internalPfii             | uid=39 | gpu_ipc = 26.5146
+  kernel_name = _Z12lud_diagonalPfii             | uid=40 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=41 | gpu_ipc = 3.2004
+  kernel_name = _Z12lud_internalPfii             | uid=42 | gpu_ipc = 11.8822
+  kernel_name = _Z12lud_diagonalPfii             | uid=43 | gpu_ipc = 0.8389
+  kernel_name = _Z13lud_perimeterPfii            | uid=44 | gpu_ipc = 1.6007
+  kernel_name = _Z12lud_internalPfii             | uid=45 | gpu_ipc = 2.9871
+  kernel_name = _Z12lud_diagonalPfii             | uid=46 | gpu_ipc = 0.8389
+
+NQU:
+  kernel_name = (single kernel)                  | uid=1  | gpu_ipc = 34.3879
+
+
+---[ BYPASS OFF (-gpgpu_gmem_skip_L1D 0) ]---
+
+BFS:
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=1  | gpu_ipc = 79.5269
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=2  | gpu_ipc = 72.5531
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=3  | gpu_ipc = 65.0414
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=4  | gpu_ipc = 54.4065
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=5  | gpu_ipc = 25.3154
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=6  | gpu_ipc = 17.6819
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=7  | gpu_ipc = 19.1406
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=8  | gpu_ipc = 34.4767
+  kernel_name = _Z6KernelP4NodePiPbS2_S1_S2_i  | uid=9  | gpu_ipc = 115.1721
+
+BP:
+  kernel_name = _Z22bpnn_layerforward_CUDAPfS_S_S_ii  | uid=1  | gpu_ipc = 665.0260
+  kernel_name = _Z24bpnn_adjust_weights_cudaPfiS_iS_S_ | uid=2  | gpu_ipc = 129.7257
+
+HS:
+  kernel_name = _Z14calculate_tempiPfS_S_iiiiffffff    | uid=1  | gpu_ipc = 356.3531
+
+LPS:
+  kernel_name = (single kernel)                  | uid=1  | gpu_ipc = 371.5598
+
+LUD:
+  kernel_name = _Z12lud_diagonalPfii             | uid=1  | gpu_ipc = 0.8307
+  kernel_name = _Z13lud_perimeterPfii            | uid=2  | gpu_ipc = 21.9486
+  kernel_name = _Z12lud_internalPfii             | uid=3  | gpu_ipc = 279.1061
+  kernel_name = _Z12lud_diagonalPfii             | uid=4  | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=5  | gpu_ipc = 21.0558
+  kernel_name = _Z12lud_internalPfii             | uid=6  | gpu_ipc = 261.4349
+  kernel_name = _Z12lud_diagonalPfii             | uid=7  | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=8  | gpu_ipc = 19.4577
+  kernel_name = _Z12lud_internalPfii             | uid=9  | gpu_ipc = 229.8357
+  kernel_name = _Z12lud_diagonalPfii             | uid=10 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=11 | gpu_ipc = 17.9376
+  kernel_name = _Z12lud_internalPfii             | uid=12 | gpu_ipc = 209.5789
+  kernel_name = _Z12lud_diagonalPfii             | uid=13 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=14 | gpu_ipc = 16.5699
+  kernel_name = _Z12lud_internalPfii             | uid=15 | gpu_ipc = 193.1855
+  kernel_name = _Z12lud_diagonalPfii             | uid=16 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=17 | gpu_ipc = 15.2230
+  kernel_name = _Z12lud_internalPfii             | uid=18 | gpu_ipc = 181.3300
+  kernel_name = _Z12lud_diagonalPfii             | uid=19 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=20 | gpu_ipc = 13.7626
+  kernel_name = _Z12lud_internalPfii             | uid=21 | gpu_ipc = 154.6429
+  kernel_name = _Z12lud_diagonalPfii             | uid=22 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=23 | gpu_ipc = 12.2285
+  kernel_name = _Z12lud_internalPfii             | uid=24 | gpu_ipc = 131.8909
+  kernel_name = _Z12lud_diagonalPfii             | uid=25 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=26 | gpu_ipc = 10.8091
+  kernel_name = _Z12lud_internalPfii             | uid=27 | gpu_ipc = 114.0209
+  kernel_name = _Z12lud_diagonalPfii             | uid=28 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=29 | gpu_ipc = 9.2525
+  kernel_name = _Z12lud_internalPfii             | uid=30 | gpu_ipc = 86.4081
+  kernel_name = _Z12lud_diagonalPfii             | uid=31 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=32 | gpu_ipc = 7.7562
+  kernel_name = _Z12lud_internalPfii             | uid=33 | gpu_ipc = 65.2366
+  kernel_name = _Z12lud_diagonalPfii             | uid=34 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=35 | gpu_ipc = 6.2395
+  kernel_name = _Z12lud_internalPfii             | uid=36 | gpu_ipc = 42.3833
+  kernel_name = _Z12lud_diagonalPfii             | uid=37 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=38 | gpu_ipc = 4.7077
+  kernel_name = _Z12lud_internalPfii             | uid=39 | gpu_ipc = 25.6468
+  kernel_name = _Z12lud_diagonalPfii             | uid=40 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=41 | gpu_ipc = 3.1367
+  kernel_name = _Z12lud_internalPfii             | uid=42 | gpu_ipc = 11.5951
+  kernel_name = _Z12lud_diagonalPfii             | uid=43 | gpu_ipc = 0.8356
+  kernel_name = _Z13lud_perimeterPfii            | uid=44 | gpu_ipc = 1.5807
+  kernel_name = _Z12lud_internalPfii             | uid=45 | gpu_ipc = 2.9456
+  kernel_name = _Z12lud_diagonalPfii             | uid=46 | gpu_ipc = 0.8356
+
+NQU:
+  kernel_name = (single kernel)                  | uid=1  | gpu_ipc = 34.2939
+
+
+=============================================================
+SUMMARY - % CHANGE (Bypass ON vs Bypass OFF)
+=============================================================
+Note: % change = ((bypass_on - bypass_off) / bypass_off) * 100
+Positive = bypass improves IPC (cache unfriendly)
+Negative = bypass hurts IPC (cache friendly)
+~0       = bypass makes little difference (cache insensitive)
+
+LPS  uid=1  : (545.64 - 371.56) / 371.56 = +46.8%  --> CACHE UNFRIENDLY
+NQU  uid=1  : (34.39  - 34.29)  / 34.29  = +0.3%   --> CACHE INSENSITIVE
+HS   uid=1  : (366.19 - 356.35) / 356.35 = +2.8%   --> CACHE INSENSITIVE (borderline)
+BP   uid=1  (_Z22bpnn_layerforward_CUDAPfS_S_S_ii)   : (712.94 - 665.03) / 665.03 = +7.2%  --> CACHE UNFRIENDLY
+BP   uid=2  (_Z24bpnn_adjust_weights_cudaPfiS_iS_S_) : (126.99 - 129.73) / 129.73 = -2.1% --> CACHE FRIENDLY
+
+BFS  uid=1  : (67.38  - 79.53)  / 79.53  = -15.3%  --> CACHE FRIENDLY
+BFS  uid=2  : (59.66  - 72.55)  / 72.55  = -17.8%  --> CACHE FRIENDLY
+BFS  uid=3  : (50.99  - 65.04)  / 65.04  = -21.6%  --> CACHE FRIENDLY
+BFS  uid=4  : (40.23  - 54.41)  / 54.41  = -26.1%  --> CACHE FRIENDLY
+BFS  uid=5  : (32.26  - 25.32)  / 25.32  = +27.4%  --> CACHE UNFRIENDLY
+BFS  uid=6  : (31.51  - 17.68)  / 17.68  = +78.2%  --> CACHE UNFRIENDLY
+BFS  uid=7  : (40.92  - 19.14)  / 19.14  = +113.8% --> CACHE UNFRIENDLY
+BFS  uid=8  : (56.84  - 34.48)  / 34.48  = +64.9%  --> CACHE UNFRIENDLY
+BFS  uid=9  : (113.77 - 115.17) / 115.17 = -1.2%   --> CACHE INSENSITIVE
+
+LUD  uid=1  (lud_diagonal)  : (0.8342 - 0.8307) / 0.8307 = +0.4%  --> CACHE INSENSITIVE
+LUD  uid=2  (lud_perimeter) : (22.82  - 21.95)  / 21.95  = +4.0%  --> CACHE UNFRIENDLY
+LUD  uid=3  (lud_internal)  : (326.39 - 279.11) / 279.11 = +16.9% --> CACHE UNFRIENDLY
